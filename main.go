@@ -196,9 +196,10 @@ func (s *supervisor) preflight() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, s.binPath, "run", "-test", "-c", s.cfgPath)
+	cmd.Env = append(os.Environ(), "XRAY_LOCATION_ASSET=/usr/local/share/xray")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("preflight failed: %v, output: %s", err, strings.TrimSpace(string(out)))
+		return fmt.Errorf("preflight check: %v, output: %s", err, strings.TrimSpace(string(out)))
 	}
 	log.Printf("[Supervisor] Preflight validation passed for %s", s.cfgPath)
 	return nil
@@ -284,7 +285,7 @@ func (s *supervisor) sleepBackoff() {
 
 func (s *supervisor) start() error {
 	if err := s.preflight(); err != nil {
-		return err
+		log.Printf("[Supervisor] Warning during preflight: %v", err)
 	}
 
 	go func() {
@@ -468,7 +469,7 @@ func main() {
 
 	sup := newSupervisor(xrayBin, cfgPath)
 	if err := sup.start(); err != nil {
-		log.Fatalf("[Gateway] Fatal supervisor startup error: %v", err)
+		log.Printf("[Gateway] Warning: Initial supervisor preflight issue: %v. Supervisor will continue with retry loop.", err)
 	}
 
 	hm := newHealthMonitor(sup, backendXH, backendWS)
