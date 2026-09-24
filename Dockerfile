@@ -93,7 +93,7 @@ RUN set -eux; \
     test -s /usr/local/share/xray/geoip.dat; \
     test -s /usr/local/share/xray/geosite.dat
 
-# 4. Standard runtime environment variables
+# 4. Standard runtime environment variables tuned for 2 vCPU & 1 GB RAM
 ENV XRAY_LOCATION_ASSET=/usr/local/share/xray \
     BERMUDA_XRAY_BIN=/usr/local/bin/xray \
     BERMUDA_XRAY_CONFIG=/app/config.json \
@@ -102,7 +102,9 @@ ENV XRAY_LOCATION_ASSET=/usr/local/share/xray \
     BERMUDA_PATH_XH=/bermuda-xhttp \
     BERMUDA_PATH_WS=/bermuda-ws \
     GOMEMLIMIT=800MiB \
+    GOMAXPROCS=2 \
     GOGC=50 \
+    GODEBUG=madvdontneed=1 \
     TZ=UTC
 
 USER bermuda:bermuda
@@ -111,5 +113,5 @@ WORKDIR /app
 # Platform dynamic port expose fallback
 EXPOSE 8080
 
-# Exec form: gateway runs as PID 1 to capture SIGTERM from Railway platform
-ENTRYPOINT ["/app/bermuda-gateway"]
+# CMD form: matching working configuration without argument collisions
+CMD ["/app/bermuda-gateway"]
